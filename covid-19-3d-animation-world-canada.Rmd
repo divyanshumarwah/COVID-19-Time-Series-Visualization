@@ -1,5 +1,5 @@
 ---
-title: "COVID-19 3D Plot and  Time Series Dashboard"
+title: "COVID-19 3D Plot and Time Series Dashboard"
 author: "Divyanshu Marwah"
 output: html_document
 ---
@@ -8,8 +8,19 @@ output: html_document
 knitr::opts_chunk$set(warning = FALSE,
                       error = FALSE)
 ```
+```{r install_packages,include=FALSE}
+#install.packages("tidyverse")
+#install.packages("lubridate")
+#install.packages("plotly")
+#install.packages("DT")
+#install.packages("gifski")
+#install.packages("ggthemes")
+#install.packages("gganimate")
 
-```{r load_packages,include=FALSE}
+#to view the outputs in notebook, remove include false from r blocks
+```
+
+```{r load_packages}
 library(tidyverse)
 library(lubridate)
 library(plotly)
@@ -18,7 +29,7 @@ library(ggthemes)
 library(gganimate)
 ```
 
-```{r time_series_confirmed,include=FALSE}
+```{r time_series_confirmed}
 # time series of confirmed cases in each area
 ts_confirmed <- read_csv(
   file = "./novel-corona-virus-2019-dataset/time_series_covid_19_confirmed.csv",
@@ -34,7 +45,7 @@ head(ts_confirmed)
 ```
 
 
-```{r time_series_recovered,include=FALSE}
+```{r time_series_recovered}
 # time series of recovered cases in each area
 ts_recovered <- read_csv(
   file = "./novel-corona-virus-2019-dataset/time_series_covid_19_recovered.csv",
@@ -49,7 +60,7 @@ head(ts_recovered)
 ```
 
 
-```{r time_series_deaths,include=FALSE}
+```{r time_series_deaths}
 # time series of deaths cases in each area
 ts_deaths <- read_csv(
   file = "./novel-corona-virus-2019-dataset/time_series_covid_19_deaths.csv",
@@ -64,8 +75,8 @@ head(ts_deaths)
 ```
 
 
-```{r time_series,include=FALSE}
-# time series of 3 cases in each area
+```{r time_series}
+# time series of all 3 cases in each area
 ts_all <- ts_confirmed %>%
   left_join(ts_recovered) %>%
   mutate(Recovered = replace_na(Recovered, replace = 0)) %>%
@@ -75,8 +86,8 @@ head(ts_all)
 ```
 
 
-```{r time_series_region,include=FALSE}
-# recent case by region
+```{r time_series_region}
+# group by region and fetch the latest data
 region_recent <- ts_all %>%
   filter(Date == max(Date)) %>%
   group_by(`Country/Region`, Date) %>%
@@ -87,17 +98,16 @@ region_recent <- ts_all %>%
 head(region_recent)
 ```
 
-```{r country_code,include=FALSE}
+```{r country_code}
 # get country code
-code <- read_csv('https://raw.githubusercontent.com/plotly/datasets/master/2014_world_gdp_with_codes.csv',
+code <- read_csv('./novel-corona-virus-2019-dataset/country_codes.csv',
                  col_types = cols(
                    COUNTRY = col_character(),
                    `GDP (BILLIONS)` = col_double(),
-                   CODE = col_character()
-                 )) %>%
+                   CODE = col_character())) %>%
   select(COUNTRY, CODE) %>%
   rename(Region = COUNTRY,
-         Code = CODE) %>%
+         Code  = CODE) %>%
   rownames_to_column("id")
 code$id <- as.integer(code$id)
 head(code)
@@ -129,8 +139,8 @@ region_recent_code <- region_recent %>%
 ```
 
 ```{r set_map,include=FALSE}
-#Set country boundaries as light grey
-line <- list(color = toRGB("#d1d1d1"), width = 0.2)
+#Set country boundaries as light grey,  hex code #D3D3D3
+line <- list(color = toRGB("#D3D3D3"), width = 0.2)
 
 #Specify map projection and options
 geo <- list(
@@ -139,11 +149,11 @@ geo <- list(
      projection = list(type = 'orthographic'),
      resolution = '100',
      showcountries = TRUE,
-     countrycolor = '#d1d1d1',
+     countrycolor = '#D3D3D3',
      showocean = TRUE,
-     oceancolor = '#064273',
+     oceancolor = '#006699',
      showlakes = TRUE,
-     lakecolor = '#99c0db',
+     lakecolor = '#a9d6f5',
      showrivers = TRUE,
      rivercolor = '#99c0db',
      bgcolor = '#e8f7fc')
@@ -209,30 +219,30 @@ ts_date_long <- ts_all_date %>%
 
 ```{r barchart_cum,include=FALSE}
 barchart <- ggplot(data = ts_all_date, aes(x = Date)) +
-  geom_bar(aes(y = Confirmed), position = "stack", stat = "identity", fill = "#ff5050") +
+  geom_bar(aes(y = Confirmed), position = "stack", stat = "identity", fill = "#f02929") +  #red color
   geom_bar(data = ts_date_long, aes(y = Cases, fill = Status), position = "stack", stat = "identity") +
-  scale_fill_manual(values = c("#000000", "#009900")) +
+  scale_fill_manual(values = c("#000000", "#00d400")) +
   scale_y_continuous(labels = scales::label_number_si(accuracy = 0.1)) +
   theme_solarized(base_size = 10, light = TRUE)+
   theme(plot.margin = margin(0, 0, 0, 0, "pt"),
         panel.background = element_rect(fill = "White"),
         legend.position = "bottom",
         axis.title = element_blank(),
-        #axis.text.y = element_blank(),
         axis.ticks = element_blank())
+show_barchart <- ggplotly(barchart) %>% 
+  layout(legend = list(orientation = 'h'))
 ```
 
 
 ```{r barchart_cum_show}
-ggplotly(barchart) %>% 
-  layout(legend = list(orientation = 'h'))
+show_barchart
 ```
 
 ### Time Series Increment in the World - Animated
 
 ```{r ts_increment,include=FALSE}
 ts_increment_long <- ts_all_date %>%
-  mutate(Confirmed = Confirmed - lag(Confirmed,1),
+  mutate(Confirmed = Confirmed - lag(Confirmed,1), #for creating a lagged version for Ts
             Deaths = Deaths - lag(Deaths,1),
             Recovered = Recovered - lag(Recovered,1)) %>%
   filter(Date != min(Date)) %>%
@@ -266,7 +276,7 @@ world_animated_ts
 
 ### Time Series Increment in Canada - Animated
 
-```{r ts_can,include=FALSE}
+```{r ts_can}
 state_code <- tibble(
   "name" = c("Alberta","British Columbia","Manitoba","New Brunswick","Newfoundland and Labrador","Northwest Territories","Nova Scotia","Ontario","Prince Edward Island","Quebec","Saskatchewan","Yukon"),
   "State" = as.factor(c("AB", "BC", "MB", "NB", "NL", "NT", "NS", "ON","PE","QC","SK","YT")))
@@ -279,7 +289,7 @@ head(ts_can)
 ```
 
 
-```{r ts_can_join,include=FALSE}
+```{r ts_can_join}
 # filter by the first confirmed case appeareds
 ts_can <- ts_can %>%
   rename(name = State) %>%
@@ -325,7 +335,7 @@ animate_can_increment <-
   labs(title = 'Canada Case Increment at Date: {frame_along}')
 
 can_ts_animated <- animate(animate_can_increment, nframes = 200, fps = 10, end_pause = 50)
-anim_save("./animate_can_increment.gif", animation = can_ts_animated)
+anim_save("animate_can_increment.gif", animation = can_ts_animated)
 ```
 
 
@@ -354,7 +364,7 @@ animate_confirmed <-
   labs(title = 'Cumulative Confirmed Cases at Date: {frame_along}')
 
 can_ts_confirmed_anim <- animate(animate_confirmed, nframes = 200, fps = 10, end_pause = 50)
-anim_save("./animate_confirmed.gif.gif", animation = can_ts_confirmed_anim)
+anim_save("./animate_confirmed_can.gif", animation = can_ts_confirmed_anim)
 ```
 
 
