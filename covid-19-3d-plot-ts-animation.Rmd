@@ -38,7 +38,7 @@ library(RColorBrewer)
 ```{r time_series_confirmed,include=FALSE}
 # time series of confirmed cases in each area
 ts_confirmed <- read_csv(
-  file = "./novel-corona-virus-2019-dataset/time_series_covid_19_confirmed.csv",
+  file = "https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_global.csv",
   col_types = cols(
     .default = col_double(),
     `Province/State` = col_character(),
@@ -52,7 +52,7 @@ head(ts_confirmed)
 ```{r time_series_recovered,include=FALSE}
 # time series of recovered cases in each area
 ts_recovered <- read_csv(
-  file = "./novel-corona-virus-2019-dataset/time_series_covid_19_recovered.csv",
+  file = "https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_recovered_global.csv",
   col_types = cols(
     .default = col_double(),
     `Province/State` = col_character(),
@@ -65,7 +65,7 @@ head(ts_recovered)
 ```{r time_series_deaths,include=FALSE}
 # time series of deaths cases in each area
 ts_deaths <- read_csv(
-  file = "./novel-corona-virus-2019-dataset/time_series_covid_19_deaths.csv",
+  file = "https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_deaths_global.csv",
   col_types = cols(
     .default = col_double(),
     `Province/State` = col_character(),
@@ -76,7 +76,7 @@ ts_deaths <- read_csv(
 head(ts_deaths)
 ```
 ```{r time_series,include=FALSE}
-# time series of all 3 cases in each area
+# combining all three
 ts_all <- ts_confirmed %>%
   left_join(ts_recovered) %>%
   mutate(Recovered = replace_na(Recovered, replace = 0)) %>%
