@@ -15,6 +15,7 @@ knitr::opts_chunk$set(warning = FALSE,
 #install.packages("tidyverse")
 #install.packages("lubridate")
 #install.packages("plotly")
+#install.packages("highcharter")
 #install.packages("DT")
 #install.packages("gifski")
 #install.packages("ggthemes")
@@ -31,6 +32,8 @@ library(plotly)
 library(DT)
 library(ggthemes)
 library(gganimate)
+library(highcharter)
+library(RColorBrewer)
 ```
 ```{r time_series_confirmed,include=FALSE}
 # time series of confirmed cases in each area
@@ -194,6 +197,19 @@ regions_interactive_table <- region_recent_code %>%
 ```{r view_interactive_table}
 regions_interactive_table
 ```
+
+### Tree Map showing Density of Confirmed Cases
+```{r tree_map,echo=FALSE}
+region_recent_code  %>%
+  hchart(type = "treemap",
+         hcaes(name = `Code`,
+               value = Confirmed,
+               colorValue = Confirmed)) %>%
+  hc_colorAxis(minColor = brewer.pal(10, "Reds")[1],
+               maxColor = brewer.pal(10, "Reds")[9])
+
+```
+
 ```{r barchart_cum_all,include=FALSE}
 ts_all_date <- ts_all %>%
   rename(Region = `Country/Region`) %>%
