@@ -227,25 +227,24 @@ Column 1
 
 ### Stacked Bar Chart showing the trend of Cumulative Csases
 ```{r barchart_cum_date,include=FALSE}
+#transforming the df  to get  the  cumulative number date-wise
 ts_date_long <- ts_all_date %>% 
     select(-Confirmed) %>%
     pivot_longer(cols = -Date, names_to = "Status", values_to = "Cases")
+head(ts_date_long)
 ```
+
 
 
 ```{r barchart_cum,include=FALSE}
 barchart <- ggplot(data = ts_all_date, aes(x = Date)) +
-  geom_bar(aes(y = Confirmed), position = "stack", stat = "identity", fill = "#f02929") +  #red color
+  geom_bar(aes(y = Confirmed), position = "stack", stat = "identity", fill = "#1b9e77") + 
   geom_bar(data = ts_date_long, aes(y = Cases, fill = Status), position = "stack", stat = "identity") +
-  scale_fill_manual(values = c("#000000", "#00d400")) +
+  scale_fill_manual(values = c("#d95f02", "#7570b3")) + #dark2 theme from colorbrewer2.org
   scale_y_continuous(labels = scales::label_number_si(accuracy = 0.1)) +
-  theme_solarized(base_size = 10, light = TRUE)+
-  theme(plot.margin = margin(0, 0, 0, 0, "pt"),
-        panel.background = element_rect(fill = "White"),
-        legend.position = "bottom",
-        axis.title = element_blank(),
-        axis.ticks = element_blank())
-show_barchart <- ggplotly(barchart) %>% 
+  theme_gdocs(base_size = 10)+
+  theme(axis.title = element_blank())
+show_barchart <- ggplotly(barchart)%>%  
   layout(legend = list(orientation = 'h'))
 ```
 
