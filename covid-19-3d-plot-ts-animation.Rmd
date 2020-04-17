@@ -1,0 +1,395 @@
+---
+title: "COVID-19  World Stats and Time Series"
+author: "Divyanshu Marwah"
+date: "4/17/2020"
+output: flexdashboard::flex_dashboard
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(warning = FALSE,
+                      error = FALSE,
+                      echo = FALSE)
+```
+
+```{r install_packages,include=FALSE}
+#install.packages("tidyverse")
+#install.packages("lubridate")
+#install.packages("plotly")
+#install.packages("DT")
+#install.packages("gifski")
+#install.packages("ggthemes")
+#install.packages("gganimate")
+#install.packages("flexdashboard")
+#to view the outputs of every code chunk, remove include false from r blocks
+```
+
+```{r load_packages,include=FALSE}
+library(flexdashboard)
+library(tidyverse)
+library(lubridate)
+library(plotly)
+library(DT)
+library(ggthemes)
+library(gganimate)
+```
+```{r time_series_confirmed,include=FALSE}
+# time series of confirmed cases in each area
+ts_confirmed <- read_csv(
+  file = "./novel-corona-virus-2019-dataset/time_series_covid_19_confirmed.csv",
+  col_types = cols(
+    .default = col_double(),
+    `Province/State` = col_character(),
+    `Country/Region` = col_character()
+  )) %>%
+  pivot_longer(cols = -c(`Province/State`, `Country/Region`, Lat, Long), names_to = "Date", values_to = "Confirmed") %>%
+  mutate(Date = mdy(Date))
+
+head(ts_confirmed)
+```
+```{r time_series_recovered,include=FALSE}
+# time series of recovered cases in each area
+ts_recovered <- read_csv(
+  file = "./novel-corona-virus-2019-dataset/time_series_covid_19_recovered.csv",
+  col_types = cols(
+    .default = col_double(),
+    `Province/State` = col_character(),
+    `Country/Region` = col_character()
+  )) %>%
+  pivot_longer(cols = -c(`Province/State`, `Country/Region`, Lat, Long), names_to = "Date", values_to = "Recovered") %>%
+  mutate(Date = mdy(Date))
+head(ts_recovered)
+```
+```{r time_series_deaths,include=FALSE}
+# time series of deaths cases in each area
+ts_deaths <- read_csv(
+  file = "./novel-corona-virus-2019-dataset/time_series_covid_19_deaths.csv",
+  col_types = cols(
+    .default = col_double(),
+    `Province/State` = col_character(),
+    `Country/Region` = col_character()
+  )) %>%
+  pivot_longer(cols = -c(`Province/State`, `Country/Region`, Lat, Long), names_to = "Date", values_to = "Deaths") %>%
+  mutate(Date = mdy(Date))
+head(ts_deaths)
+```
+```{r time_series,include=FALSE}
+# time series of all 3 cases in each area
+ts_all <- ts_confirmed %>%
+  left_join(ts_recovered) %>%
+  mutate(Recovered = replace_na(Recovered, replace = 0)) %>%
+  left_join(ts_deaths) %>%
+  mutate(Deaths = replace_na(Deaths, replace = 0))
+head(ts_all)
+```
+
+```{r time_series_region,include=FALSE}
+# group by region and fetch the latest data
+region_recent <- ts_all %>%
+  filter(Date == max(Date)) %>%
+  group_by(`Country/Region`, Date) %>%
+  summarise(Confirmed = sum(Confirmed),
+            Recovered = sum(Recovered),
+            Deaths = sum(Deaths))
+
+head(region_recent,include=FALSE)
+```
+```{r country_code,include=FALSE}
+# get country code
+code <- read_csv('./novel-corona-virus-2019-dataset/country_codes.csv',
+                 col_types = cols(
+                   COUNTRY = col_character(),
+                   `GDP (BILLIONS)` = col_double(),
+                   CODE = col_character())) %>%
+  select(COUNTRY, CODE) %>%
+  rename(Region = COUNTRY,
+         Code  = CODE) %>%
+  rownames_to_column("id")
+code$id <- as.integer(code$id)
+head(code)
+```
+```{r replace_region_name,include=FALSE}
+# Rename the unmatched region name in code
+code$Region <- code$Region %>%
+  str_replace(pattern = "United States", replacement = "US") %>%
+  str_replace(pattern = "Macedonia", replacement = "North Macedonia") %>%
+  str_replace(pattern = "Czech Republic", replacement = "Czechia") %>%
+  str_replace(pattern = "Taiwan", replacement = "Taiwan*") %>%
+  str_replace(pattern = "West Bank", replacement = "West Bank and Gaza") %>%
+  str_replace(pattern = "Congo, Democratic Republic of the", replacement = "Congo (Kinshasa)") %>%
+  str_replace(pattern = "Congo, Republic of the", replacement = "Congo (Brazzaville)") %>%
+  str_replace(pattern = "Bahamas, The", replacement = "Bahamas") %>%
+  str_replace(pattern = "Swaziland", replacement = "Eswatini") %>%
+  str_replace(pattern = "Gambia, The", replacement = "Gambia")
+```
+```{r recent_case_cumulative,include=FALSE}
+# recent cumulative case and join daily case summary with code name
+region_recent_code <- region_recent %>%
+  left_join(code, by = c("Country/Region" = "Region")) %>%
+  arrange(desc(Confirmed))
+```
+```{r set_map,include=FALSE}
+#Set country boundaries as light grey,  hex code #D3D3D3
+line <- list(color = toRGB("#D3D3D3"), width = 0.2)
+
+#Specify map projection and options
+geo <- list(
+     showframe = FALSE,
+     showcoastlines = FALSE,
+     projection = list(type = 'orthographic'),
+     resolution = '100',
+     showcountries = TRUE,
+     countrycolor = '#D3D3D3',
+     showocean = TRUE,
+     oceancolor = '#006699',
+     showlakes = TRUE,
+     lakecolor = '#a9d6f5',
+     showrivers = TRUE,
+     rivercolor = '#99c0db',
+     bgcolor = '#e8f7fc')
+```
+
+3D Visualization - Latest
+============================================
+
+Column 1
+--------------------------------------------------
+
+### 3D Map for Confirmed Cases in Each Region
+```{r confirm_map_3d,include=FALSE}
+confirm_map_3d <- plot_geo() %>%
+  layout(geo = geo,
+         paper_bgcolor = '#e8f7fc') %>%
+  add_trace(data = region_recent_code,
+            z = ~Confirmed, 
+            color = ~Confirmed, 
+            colors = 'Reds',
+            text = ~`Country/Region`,
+            locations = ~Code, 
+            marker = list(line = line))
+```
+
+
+```{r view_confirm_map_3d}
+confirm_map_3d
+```
+
+Column 2
+--------------------------------------------------
+
+### Search by Region
+
+```{r table_case,include=FALSE}
+regions_interactive_table <- region_recent_code %>%
+  select(`Country/Region`,Code, Date, Confirmed, Recovered, Deaths) %>%
+  arrange(desc(Confirmed)) %>%
+  datatable(
+    rownames = FALSE,
+    fillContainer = TRUE,
+    options = list(
+      autoWidth = TRUE,
+      bPaginate = FALSE,
+      pageLength = 10)
+  )
+```
+```{r view_interactive_table}
+regions_interactive_table
+```
+```{r barchart_cum_all,include=FALSE}
+ts_all_date <- ts_all %>%
+  rename(Region = `Country/Region`) %>%
+  group_by(Date) %>%
+  summarise(Confirmed = sum(Confirmed),
+            Deaths = sum(Deaths),
+            Recovered = sum(Recovered))
+```
+
+World Trend Charts
+============================================
+
+Column 1
+--------------------------------------------------
+
+### Stacked Bar Chart showing the trend of Cumulative Csases
+```{r barchart_cum_date,include=FALSE}
+ts_date_long <- ts_all_date %>% 
+    select(-Confirmed) %>%
+    pivot_longer(cols = -Date, names_to = "Status", values_to = "Cases")
+```
+
+
+```{r barchart_cum,include=FALSE}
+barchart <- ggplot(data = ts_all_date, aes(x = Date)) +
+  geom_bar(aes(y = Confirmed), position = "stack", stat = "identity", fill = "#f02929") +  #red color
+  geom_bar(data = ts_date_long, aes(y = Cases, fill = Status), position = "stack", stat = "identity") +
+  scale_fill_manual(values = c("#000000", "#00d400")) +
+  scale_y_continuous(labels = scales::label_number_si(accuracy = 0.1)) +
+  theme_solarized(base_size = 10, light = TRUE)+
+  theme(plot.margin = margin(0, 0, 0, 0, "pt"),
+        panel.background = element_rect(fill = "White"),
+        legend.position = "bottom",
+        axis.title = element_blank(),
+        axis.ticks = element_blank())
+show_barchart <- ggplotly(barchart) %>% 
+  layout(legend = list(orientation = 'h'))
+```
+
+
+```{r barchart_cum_show}
+show_barchart
+```
+
+Column 2
+--------------------------------------------------
+
+### Animated Time Series Increment in the World 
+
+```{r ts_increment,include=FALSE}
+ts_increment_long <- ts_all_date %>%
+  mutate(Confirmed = Confirmed - lag(Confirmed,1), #for creating a lagged version for Ts
+            Deaths = Deaths - lag(Deaths,1),
+            Recovered = Recovered - lag(Recovered,1)) %>%
+  filter(Date != min(Date)) %>%
+  pivot_longer(-Date, names_to = "Case", values_to = "Increment")
+```
+
+```{r animate_world_increment,include=FALSE}
+animate_world_increment <- 
+  ggplot(data = ts_increment_long, 
+         mapping = aes(x = Date, y = Increment, group = Case, color = Case)) +
+  geom_line() +
+  scale_color_brewer(palette = "Dark2") +
+  geom_segment(aes(xend = max(Date)+1, yend = Increment), linetype = 2, colour = 'grey') +
+  geom_text(aes(x = max(Date)+1, label = Case), hjust = 0) +
+  coord_cartesian(xlim = c(min(ts_increment_long$Date), max(ts_increment_long$Date)+7), clip = 'off') +
+  theme(legend.position = "none", axis.title.x = element_blank()) +
+  guides(size = FALSE) + 
+  geom_point(aes(size = Increment)) +
+  scale_size(range = c(2, 10)) +
+  transition_reveal(Date) +
+  labs(title = 'World Case Increment at Date: {frame_along}')
+world_animated_ts <- animate(animate_world_increment, nframes = 200, fps = 10, end_pause = 50)
+anim_save("animate_world_increment.gif", animation = world_animated_ts)
+```
+
+
+```{r view_animate_world_increment}
+world_animated_ts
+```
+
+```{r ts_top_10_countries,include=FALSE}
+countries  <- c("US","Spain","Italy","France","Germany",
+                "China","United Kingdom","Iran","Turkey","Belgium")
+
+ts_countries  <- ts_all%>%
+  filter(`Country/Region` %in% countries)
+
+head(ts_countries)
+```
+```{r  join_by_country_code,include=FALSE}
+ts_countries <- ts_countries %>%
+  rename(Region = `Country/Region`)%>%
+  filter(Confirmed > 0) %>%
+  left_join(code)
+
+head(ts_countries)
+```
+```{r combine_states,include=FALSE}
+new_ts_country <- ts_countries%>%
+  group_by(Code,Date)%>%
+  summarize(Confirmed = sum(Confirmed),
+            Recovered = sum(Recovered),
+            Deaths = sum(Deaths))
+
+head(new_ts_country)
+```
+
+Time Series Plot - Most Affected
+============================================
+
+Column 1
+--------------------------------------------------
+
+### Time Series Increment in Most Affected Countries - Animated
+
+```{r ts_animate_confirmed,include=FALSE}
+animate_confirmed <- 
+  ggplot(data = new_ts_country, 
+         mapping = aes(x = Date, y = Confirmed, group = Code, color = Code)) +
+  geom_line() +
+  scale_color_brewer(palette = "Paired") +  # palette from https://colorbrewer2.org/
+  scale_y_log10() +
+  geom_segment(aes(xend = max(Date)+1, yend = Confirmed), linetype = 2, colour = 'grey') +
+  geom_text(aes(x = max(Date)+1, label = Code), hjust = 0) +
+  coord_cartesian(clip = 'off') +
+  theme(legend.position = "none", axis.title.x = element_blank()) +
+  guides(size = FALSE) + 
+  geom_point(aes(size = Confirmed), alpha = 0.7) +
+  scale_size(range = c(2, 10)) +
+  transition_reveal(Date) +
+  labs(title = 'Confirmed Cases at Date: {frame_along}')
+
+coun_ts_confirmed_anim <- animate(animate_confirmed, nframes = 200, fps = 10, end_pause = 50)
+anim_save("./animate_confirmed_coun.gif", animation = coun_ts_confirmed_anim)
+```
+```{r view_ts_animate_confirmed}
+coun_ts_confirmed_anim
+```
+
+Column 2
+--------------------------------------------------
+
+### Deaths Cases in Most Affected Countries - Animated
+
+```{r ts_animate_deaths,include=FALSE}
+animate_deaths <- 
+  ggplot(data = new_ts_country, 
+         mapping = aes(x = Date, y = Deaths, group = Code, color = Code)) +
+  geom_line() +
+  scale_color_brewer(palette = "Paired") +  # palette from https://colorbrewer2.org/
+  scale_y_log10() +
+  geom_segment(aes(xend = max(Date)+1, yend = Deaths), linetype = 2, colour = 'grey') +
+  geom_text(aes(x = max(Date)+1, label = Code), hjust = 0) +
+  coord_cartesian(clip = 'off') +
+  theme(legend.position = "none", axis.title.x = element_blank()) +
+  guides(size = FALSE) + 
+  geom_point(aes(size = Deaths), alpha = 0.7) +
+  scale_size(range = c(2, 10)) +
+  transition_reveal(Date) +
+  labs(title = 'Death Cases at Date: {frame_along}')
+
+coun_ts_death_anim <- animate(animate_deaths, nframes = 200, fps = 10, end_pause = 50)
+anim_save("./animate_death_coun.gif", animation = coun_ts_death_anim)
+```
+
+
+```{r view_ts_animate_deaths}
+coun_ts_death_anim
+```
+
+### Recovered Cases Most Affected Countries - Animated
+
+```{r ts_animate_recovery,include=FALSE}
+animate_recovered <- 
+  ggplot(data = new_ts_country, 
+         mapping = aes(x = Date, y = Recovered, group = Code, color = Code)) +
+  geom_line() +
+  scale_color_brewer(palette = "Paired") +  # palette from https://colorbrewer2.org/
+  scale_y_log10() +
+  geom_segment(aes(xend = max(Date)+1, yend = Recovered), linetype = 2, colour = 'grey') +
+  geom_text(aes(x = max(Date)+1, label = Code), hjust = 0) +
+  coord_cartesian(clip = 'off') +
+  theme(legend.position = "none", axis.title.x = element_blank()) +
+  guides(size = FALSE) + 
+  geom_point(aes(size = Recovered), alpha = 0.7) +
+  scale_size(range = c(2, 10)) +
+  transition_reveal(Date) +
+  labs(title = 'Recovered Cases at Date: {frame_along}')
+
+coun_ts_recov_anim <- animate(animate_recovered, nframes = 200, fps = 10, end_pause = 50)
+anim_save("./animate_recovery_coun.gif", animation = coun_ts_recov_anim)
+```
+
+
+```{r view_ts_animate_recovery}
+coun_ts_recov_anim
+```
