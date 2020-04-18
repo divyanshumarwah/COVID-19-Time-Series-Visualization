@@ -1,5 +1,8 @@
-# DV_Project_CS7DS4
+# COVID-19-Time-Series-Visualization
+
  3D Plot and Time Series Visualization of COVID-19
+ 
+CS7DS4 Novel Visualization Project - Assignment 3
 
 References:
 1. https://github.com/CSSEGISandData/COVID-19/tree/master/csse_covid_19_data
