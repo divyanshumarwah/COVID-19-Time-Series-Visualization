@@ -190,7 +190,7 @@ regions_interactive_table <- region_recent_code %>%
     fillContainer = TRUE,
     options = list(
       autoWidth = TRUE,
-      bPaginate = FALSE,
+      bPaginate = TRUE,
       pageLength = 10)
   )
 ```
