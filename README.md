@@ -4,6 +4,8 @@
  
 CS7DS4 Novel Visualization Project - Assignment 3
 
+Video Presentation: https://www.youtube.com/watch?v=-jzb3lmuA_I
+
 Instructions to run Project:
 1. Visualization can be directly viewed at https://www.scss.tcd.ie/~marwahd/covid-19-3d-plot-ts-animation.html 
 or alternatively, by opening the covid-19-3d-plot-ts-animation.html file.
