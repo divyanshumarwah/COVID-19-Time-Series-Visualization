@@ -4,8 +4,11 @@
  
 CS7DS4 Novel Visualization Project - Assignment 3
 
+Video Presentation: https://www.youtube.com/watch?v=-jzb3lmuA_I
+
 Instructions to run Project:
-1. Visualization can be directly viewed by opening the covid-19-3d-plot-ts-animation.html file.
+1. Visualization can be directly viewed at https://www.scss.tcd.ie/~marwahd/covid-19-3d-plot-ts-animation.html 
+or alternatively, by opening the covid-19-3d-plot-ts-animation.html file.
 2. To execute the source code, R and RStudio should be installed
 	i) open DV_Project_CS7DS4.Rproj file with Rstudio
 	ii) install the required packages in R mentioned in the covid-19-3d-plot-ts-animation.Rmd file 
